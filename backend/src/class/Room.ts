@@ -3,7 +3,8 @@ import UWS from "uWebSockets.js";
 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
 
 export default class Room {
-  readonly id = nanoid();
+  // readonly id = nanoid();
+  readonly id = "1234";
   readonly code = customAlphabet(characters, 6)();
   #clientMap: Map<string, UWS.WebSocket> = new Map();
 

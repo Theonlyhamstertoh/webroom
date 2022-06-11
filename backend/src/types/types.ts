@@ -1,14 +1,20 @@
 import Room from "src/class/Room.js";
+import UWS from "uWebSockets.js";
 
 export interface client_socket {}
 
-export interface clientData {
+export interface ServerData {
   topic: string;
   type: string;
   roomId?: string;
   roomMap?: [];
   roomCode?: string;
-  username?: string;
+  client?: UWS.WebSocket;
+}
+
+export interface ClientData {
+  username: string;
+  id: string;
 }
 
 export interface gameData {

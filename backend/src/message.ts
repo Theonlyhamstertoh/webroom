@@ -4,7 +4,7 @@ import Room from "./class/Room.js";
 import { RoomMap } from "./class/RoomMap.js";
 import getRoomTopic from "./functions/getRoomTopic.js";
 import { TYPES, TOPICS } from "./TOPICS.js";
-import { clientData } from "./types/types.js";
+import { ServerData } from "./types/types.js";
 
 const decoder = new TextDecoder("utf-8");
 /**
@@ -18,7 +18,7 @@ export default function messageActions(
   message: ArrayBuffer,
   app: UWS.TemplatedApp
 ) {
-  const client_data: clientData = JSON.parse(decoder.decode(message));
+  const client_data: ServerData = JSON.parse(decoder.decode(message));
 
   console.log(client_data);
   switch (client_data.topic) {
@@ -45,6 +45,7 @@ function client_actions(
   app: UWS.TemplatedApp
 ) {
   let room: Room | Error;
+  let data: ServerData;
 
   switch (client_data.type) {
     case TYPES.CLIENT.CONNECTED:
@@ -52,7 +53,6 @@ function client_actions(
       break;
     case TYPES.CLIENT.JOIN_ROOM:
       ws.id = nanoid();
-      ws.username = client_data.username;
 
       // add client to the room list
       // error checking will be done in the function
@@ -62,19 +62,37 @@ function client_actions(
         ws.subscribe(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL));
         ws.subscribe(getRoomTopic(room.id, TOPICS.GAME_CHANNEL));
 
+        data = {
+          topic: TOPICS.ROOM_CHANNEL,
+          type: TYPES.ROOM.ADD_CLIENT_TO_LIST,
+          client: ws,
+          roomId: client_data.roomId,
+        };
+
         // send to every user that client has joined
-        app.publish(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL), "stuff");
+        app.publish(
+          getRoomTopic(room.id, TOPICS.ROOM_CHANNEL),
+          JSON.stringify(data)
+        );
       }
       break;
-    // subscribe to all the room/server topics
     case TYPES.CLIENT.LEAVE_ROOM:
       room = roomMap.getRoom(client_data.roomId);
       if (room instanceof Room) {
+        data = {
+          topic: TOPICS.ROOM_CHANNEL,
+          type: TYPES.ROOM.REMOVE_CLIENT_FROM_LIST,
+          roomId: client_data.roomId,
+          client: ws,
+        };
+        app.publish(
+          getRoomTopic(room.id, TOPICS.ROOM_CHANNEL),
+          JSON.stringify(data)
+        );
+        // ws.send(JSON.stringify(data));
         room.removeClient(ws.id);
         ws.unsubscribe(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL));
         ws.unsubscribe(getRoomTopic(room.id, TOPICS.GAME_CHANNEL));
-
-        app.publish(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL), "left room");
       }
       break;
   }
@@ -93,10 +111,13 @@ function room_actions(
       break;
     case TYPES.ROOM.GET_ALL_ROOMS:
       // send all the rooms and clients over
-      JSON.stringify({
-        type: TYPES.ROOM.GET_ALL_ROOMS,
-        roomMap: roomMap.getAllRooms(),
-      });
+      ws.send(
+        JSON.stringify({
+          topic: TOPICS.ROOM_CHANNEL,
+          type: TYPES.ROOM.GET_ALL_ROOMS,
+          roomMap: roomMap.getAllRooms(),
+        })
+      );
 
       break;
     case TYPES.ROOM.REMOVE_ROOM:
