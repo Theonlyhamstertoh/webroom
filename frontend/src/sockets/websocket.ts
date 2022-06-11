@@ -1,9 +1,16 @@
-import { clientData, CLIENT_TYPES, TOPICS, TYPES } from "./TOPICS";
+import { clientData, TOPICS, TYPES } from "../../../backend/src/TOPICS";
 
 const ws = new WebSocket("ws://localhost:3001");
 
+const rooms: any[] = [];
 ws.onmessage = (event) => {
   console.log(JSON.parse(event.data));
+  const data = JSON.parse(event.data);
+
+  switch (data.type) {
+    case TYPES.ROOM.GET_ALL_ROOMS:
+      rooms.push(...data.roomMap);
+  }
 };
 ws.onopen = () => {
   console.log(
@@ -14,10 +21,16 @@ ws.onopen = () => {
   const data: any = {
     // in future, it would include room code
     topic: TOPICS.ROOM_CHANNEL,
-    type: TYPES.ROOM.GET_ALL_ROOMS,
+    type: TYPES.ROOM.CREATE_ROOM,
   };
 
   ws.send(JSON.stringify(data));
+  ws.send(
+    JSON.stringify({
+      topic: TOPICS.ROOM_CHANNEL,
+      type: TYPES.CLIENT.JOINED_ROOM,
+    })
+  );
 };
 
 export default ws;

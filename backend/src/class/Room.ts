@@ -1,18 +1,17 @@
-import { randomBytes } from "crypto";
 import { customAlphabet, nanoid } from "nanoid";
 import UWS from "uWebSockets.js";
 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
 
 export default class Room {
-  #id = nanoid();
-  #code = customAlphabet(characters, 6)();
-  #clientMap = new Map();
+  readonly id = nanoid();
+  readonly code = customAlphabet(characters, 6)();
+  #clientMap: Map<string, UWS.WebSocket> = new Map();
 
-  addClient(id: string, ws: UWS.WebSocket) {
+  addClient(id: string, ws: UWS.WebSocket): void {
     this.#clientMap.set(id, ws);
   }
 
-  removeClient(id: string) {
+  removeClient(id: string): void {
     this.#clientMap.delete(id);
   }
 
@@ -25,22 +24,14 @@ export default class Room {
   }
 
   getAllClients() {
-    return this.#clientMap;
+    return Array.from(this.#clientMap, ([_, ws]) => ws);
   }
 
-  removeAllClients() {
+  removeAllClients(): void {
     this.#clientMap.clear();
   }
 
   get size() {
     return this.#clientMap.size;
-  }
-
-  get code() {
-    return this.#code;
-  }
-
-  get id() {
-    return this.#id;
   }
 }

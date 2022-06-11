@@ -3,7 +3,7 @@ export const TOPICS = Object.freeze({
   GAME_CHANNEL: "GAME_CHANNEL",
   CLIENT_CHANNEL: "CLIENT_CHANNEL",
   ROOM_CHANNEL: "ROOM_CHANNEL",
-  ERROR: "ERROR",
+  ERROR_CHANNEL: "ERROR_CHANNEL",
 });
 
 export const TYPES = Object.freeze({
@@ -17,18 +17,15 @@ export const TYPES = Object.freeze({
     SELF_CONNECTED: "SELF_CONNECTED",
     CONNECTED: "CONNECTED",
     DISCONNECTED: "DISCONNECTED",
+    JOIN_ROOM: "JOINED_ROOM",
+    LEAVE_ROOM: "LEAVE_ROOM",
   },
   ROOM: {
     CREATE_ROOM: "CREATE_ROOM",
     REMOVE_ROOM: "REMOVE_ROOM",
-    JOIN_ROOM: "JOIN_ROOM",
-    LEAVE_ROOM: "LEAVE_ROOM",
     GET_ALL_ROOMS: "GET_ALL_ROOMS",
     GET_ALL_CLIENTS: "GET_ALL_CLIENTS",
-    REMOVE_CLIENT: "REMOVE_CLIENT",
+    REMOVE_CLIENT_FROM_LIST: "REMOVE_CLIENT",
+    ADD_CLIENT_TO_LIST: "ADD_CLIENT",
   },
 });
-export interface clientData {
-  topic: string;
-  type: string;
-}

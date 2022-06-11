@@ -1,6 +1,6 @@
 import UWS from "uWebSockets.js";
 import getRoomTopic from "./functions/getRoomTopic.js";
-import message from "./message.js";
+import messageActions from "./message.js";
 import { TOPICS } from "./TOPICS.js";
 import "./class/Room.js";
 /**
@@ -21,7 +21,7 @@ app.ws("/*", {
     console.log(`-------------------`);
     console.log(`WEBSOCKET CONNECTED`);
   },
-  message: message,
+  message: (ws, message) => messageActions(ws, message, app),
 });
 
 const PORT: number = parseInt(process.env.PORT as string) || 3001;

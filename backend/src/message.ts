@@ -1,52 +1,121 @@
+import { nanoid } from "nanoid";
 import UWS from "uWebSockets.js";
+import Room from "./class/Room.js";
 import { RoomMap } from "./class/RoomMap.js";
-import { TYPES, TOPICS, clientData } from "./TOPICS.js";
-const decoder = new TextDecoder("utf-8");
+import getRoomTopic from "./functions/getRoomTopic.js";
+import { TYPES, TOPICS } from "./TOPICS.js";
+import { clientData } from "./types/types.js";
 
-const roomMap = new RoomMap();
-roomMap.createRoom();
-roomMap.createRoom();
-roomMap.createRoom();
-roomMap.createRoom();
-roomMap.createRoom();
-roomMap.createRoom();
-roomMap.createRoom();
-export default function message(ws: UWS.WebSocket, message: ArrayBuffer) {
-  const client_data = JSON.parse(decoder.decode(message));
+const decoder = new TextDecoder("utf-8");
+/**
+ * Testing
+ */
+import { roomMap } from "./test.js";
+import { appendFile } from "fs";
+
+export default function messageActions(
+  ws: UWS.WebSocket,
+  message: ArrayBuffer,
+  app: UWS.TemplatedApp
+) {
+  const client_data: clientData = JSON.parse(decoder.decode(message));
 
   console.log(client_data);
   switch (client_data.topic) {
     case TOPICS.CLIENT_CHANNEL:
-      client_actions(ws, client_data);
+      client_actions(ws, client_data, app);
       break;
     case TOPICS.ROOM_CHANNEL:
-      room_actions(ws, client_data, roomMap);
+      room_actions(ws, client_data, roomMap, app);
       break;
   }
 }
 
-function client_actions(ws: UWS.WebSocket, client_data: any) {
+/**
+ *
+ * @todo send user data when client joins to everyone
+ *
+ * @param ws
+ * @param client_data
+ * @param app
+ */
+function client_actions(
+  ws: UWS.WebSocket,
+  client_data: any,
+  app: UWS.TemplatedApp
+) {
+  let room: Room | Error;
+
   switch (client_data.type) {
     case TYPES.CLIENT.CONNECTED:
       ws.send("client conencted");
       break;
+    case TYPES.CLIENT.JOIN_ROOM:
+      ws.id = nanoid();
+      ws.username = client_data.username;
+
+      // add client to the room list
+      // error checking will be done in the function
+      room = roomMap.getRoom(client_data.roomId);
+      if (room instanceof Room) {
+        room.addClient(ws.id, ws);
+        ws.subscribe(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL));
+        ws.subscribe(getRoomTopic(room.id, TOPICS.GAME_CHANNEL));
+
+        // send to every user that client has joined
+        app.publish(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL), "stuff");
+      }
+      break;
+    // subscribe to all the room/server topics
+    case TYPES.CLIENT.LEAVE_ROOM:
+      room = roomMap.getRoom(client_data.roomId);
+      if (room instanceof Room) {
+        room.removeClient(ws.id);
+        ws.unsubscribe(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL));
+        ws.unsubscribe(getRoomTopic(room.id, TOPICS.GAME_CHANNEL));
+
+        app.publish(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL), "left room");
+      }
+      break;
   }
 }
-function room_actions(ws: UWS.WebSocket, client_data: any, roomMap: RoomMap) {
+function room_actions(
+  ws: UWS.WebSocket,
+  client_data: any,
+  roomMap: RoomMap,
+  app: UWS.TemplatedApp
+) {
+  // console.log(roomMap.getAllRooms());
   switch (client_data.type) {
     case TYPES.ROOM.CREATE_ROOM:
       const newRoom = roomMap.createRoom();
+
       break;
     case TYPES.ROOM.GET_ALL_ROOMS:
-      // ws.send(JSON.stringify(Object.fromEntries(roomMap.getAllRooms())));
-      ws.send(JSON.stringify(roomMap.getAllRooms()));
-      console.log(roomMap.getAllRooms());
+      // send all the rooms and clients over
+      JSON.stringify({
+        type: TYPES.ROOM.GET_ALL_ROOMS,
+        roomMap: roomMap.getAllRooms(),
+      });
+
       break;
     case TYPES.ROOM.REMOVE_ROOM:
       roomMap.removeRoom(client_data.id);
       break;
-    case TYPES.ROOM.JOIN_ROOM:
-      // send the clicked room id
-      roomMap.getRoom(client_data.id).addClient(ws.id, ws);
+    // case TYPES.ROOM.ADD_CLIENT_TO_LIST:
+    //   // add to every client's list and update old map
+    //   room = roomMap.getRoom(client_data.roomId);
+    //   if (room instanceof Room) {
+    //     // WE ARE THE SERVER. HE IS ALREADY IN THE ARRAY
+    //     // WE JUST NEED TO SEND HIS DATA TO EVERYONE AND UPDATE ROOM LISTING
+    //     // room.addClient(ws.id, ws);
+    //   }
+    //   break;
+    // case TYPES.ROOM.REMOVE_CLIENT_FROM_LIST:
+    //   room = roomMap.getRoom(client_data.roomId);
+    //   if (room instanceof Room) {
+    //     room.removeClient(ws.id);
+    //   }
+    //   break;
   }
 }

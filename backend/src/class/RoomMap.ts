@@ -1,12 +1,13 @@
 import { nanoid } from "nanoid";
+import { TYPES } from "../TOPICS.js";
 import Room from "./Room.js";
 
 export class RoomMap {
-  #roomMap = new Map();
+  #roomMap: Map<string, Room> = new Map();
   #id = nanoid();
 
   createRoom() {
-    const newRoom = new Room();
+    const newRoom: Room = new Room();
     this.#roomMap.set(newRoom.id, newRoom);
     return newRoom;
   }
@@ -19,26 +20,26 @@ export class RoomMap {
     this.#roomMap.clear();
   }
 
-  getRoom(id: string) {
+  getRoom(id: string): Room | Error {
     if (this.#roomMap.has(id)) {
-      return this.#roomMap.get(id);
+      return this.#roomMap.get(id)!;
     } else {
       return new Error("NO ROOM FOUND");
     }
   }
 
   getAllRooms() {
-    const array: any[] = [];
-    this.#roomMap.forEach((value, key) => {
-      array.push({
-        id: value.id,
-        code: value.code,
-      });
-    });
-    return array;
+    return Array.from(this.#roomMap, ([_, room]) => ({
+      ...room,
+      clients: room.getAllClients(),
+    }));
   }
 
   get size() {
     return this.#roomMap.size;
+  }
+
+  get id() {
+    return this.#id;
   }
 }
