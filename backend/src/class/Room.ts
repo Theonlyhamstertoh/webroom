@@ -3,17 +3,17 @@ import UWS from "uWebSockets.js";
 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
 
 export default class Room {
-  id: string = nanoid();
+  readonly id: string = "worship his holy name";
   readonly code = customAlphabet(characters, 6)();
   // clientMap: Map<string, UWS.WebSocket> = new Map();
   clientMap: Map<string, any> = new Map();
-  // isFull: boolean = false; just get size?
   isPlaying: boolean = false;
   isOver: boolean = false;
-  maxSize: number = 10;
+  maxSize: number = 15;
+  minSize: number = 5;
   readonly type: string;
 
-  constructor(roomType: string) {
+  constructor(roomType: string, maxSize: number) {
     this.type = roomType;
   }
   addClient(id: string, ws: UWS.WebSocket): void {
@@ -46,9 +46,6 @@ export default class Room {
 
   getClientMap() {
     return this.clientMap;
-  }
-  admin_only_set_id(newId: string) {
-    this.id = newId;
   }
 
   admin_only_add_fake_client(id: string) {

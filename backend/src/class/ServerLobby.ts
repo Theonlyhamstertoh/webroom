@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
 
-export default class LobbyMap {
+export default class ServerLobby {
   readonly id = nanoid();
   #lobbyMap: Map<string, any> = new Map();
-
+  totalClientsInServer: number = 0;
   addClient(id: string, ws: any): void {
     this.#lobbyMap.set(id, ws);
   }

@@ -4,12 +4,13 @@ import UWS from "uWebSockets.js";
 export interface client_socket {}
 
 export interface ServerData {
-  topic: string;
+  channel: string;
   type: string;
   roomId?: string;
-  roomMap?: [];
   roomCode?: string;
-  client?: UWS.WebSocket;
+  // client?: ClientData;
+  clientId?: string;
+  clientUsername?: string;
 }
 
 export interface ClientData {

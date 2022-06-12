@@ -1,4 +1,9 @@
-import { clientData, TOPICS, TYPES } from "../../../backend/src/TOPICS";
+import {
+  CHANNELS,
+  clientData,
+  TOPICS,
+  TYPES,
+} from "../../../backend/src/TOPICS";
 
 const ws = new WebSocket("ws://localhost:3001");
 
@@ -21,13 +26,22 @@ ws.onopen = () => {
     "background: #111; color: #bada55; font-size: 30px; border-radius: 5px"
   );
 
+  ws.send(
+    JSON.stringify({
+      type: TYPES.CLIENT.JOIN_PUBLIC_ROOM,
+      username: "weibo",
+    })
+  );
+
+  // window.setTimeout(() => {
   //   ws.send(
   //     JSON.stringify({
-  //       topic: TOPICS.CLIENT_CHANNEL,
-  //       type: TYPES.CLIENT.JOIN_ROOM,
-  //       roomId: "1234",
+  //       type: TYPES.CLIENT.LEAVE_ROOM,
+  //       username: "weibo",
+  //       roomId: "worship his holy name",
   //     })
   //   );
+  // }, 15000);
 
   // ws.send(
   //   JSON.stringify({
