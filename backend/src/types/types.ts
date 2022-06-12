@@ -13,11 +13,6 @@ export interface ServerData {
   clientUsername?: string;
 }
 
-export interface ClientData {
-  username: string;
-  id: string;
-}
-
 export interface gameData {
   x: number;
   y: number;

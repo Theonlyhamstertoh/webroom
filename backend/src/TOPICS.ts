@@ -34,3 +34,6 @@ export const TYPES = Object.freeze({
     ADD_CLIENT: "ADD_CLIENT",
   },
 });
+
+export const MAX_ROOM_SIZE = 5;
+export const MIN_ROOM_SIZE = 3;

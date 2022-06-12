@@ -6,8 +6,8 @@ export default class House {
   roomMap: Map<string, Room> = new Map();
   #id = nanoid();
 
-  createRoom(type: string) {
-    const newRoom: Room = new Room(type);
+  createRoom(type: string, maxSize: number) {
+    const newRoom: Room = new Room(type, maxSize);
     this.roomMap.set(newRoom.id, newRoom);
     return newRoom;
   }
@@ -33,6 +33,16 @@ export default class House {
       ...room,
       clients: room.getAllClients(),
     }));
+  }
+
+  getAllPublicRooms(): number {
+    let size = 0;
+    for (const [_, room] of this.roomMap) {
+      if (room.type === "public") {
+        size++;
+      }
+    }
+    return size;
   }
 
   getRoomMap() {

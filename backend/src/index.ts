@@ -32,7 +32,6 @@ app.ws("/*", {
   close: (ws, message) => {
     serverLobby.totalClientsInServer--;
 
-    // what if they didn't join a room and disconnects????
     ws.roomId && joinLeaveRoomHandler(ws, TYPES.CLIENT.LEAVE_ROOM, app, true);
   },
 });

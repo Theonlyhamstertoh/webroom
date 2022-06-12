@@ -60,6 +60,7 @@ function client_actions(ws: UWS.WebSocket, client_data: any, house: House, app: 
         publishClientData(ws, room, TYPES.ROOM.ADD_CLIENT, app);
         break;
       }
+
       break;
     }
     case TYPES.CLIENT.JOIN_PRIVATE_ROOM: {
@@ -111,6 +112,7 @@ export function publishClientData(
       clientUsername: ws.username,
       roomId: room.id,
       roomSize: room.getAllClients(),
+      rooms: house.getAllRooms(),
     })
   );
 }
