@@ -13,6 +13,7 @@ export const CHANNELS = Object.freeze({
 export const TYPES = Object.freeze({
   GAME: {
     LEADERBOARD: "LEADERBOARD",
+    UPDATE: "UPDATE",
     SEND_DATA: "SEND_DATA",
     START: "START",
     OVER: "OVER",

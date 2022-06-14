@@ -34,7 +34,10 @@ export default class Room {
   }
 
   getAllClients() {
-    return Array.from(this.clientMap, ([_, ws]) => ws);
+    return Array.from(this.clientMap, ([_, ws]) => ({
+      id: ws.id,
+      username: ws.username,
+    }));
   }
 
   removeAllClients(): void {

@@ -12,6 +12,8 @@ const decoder = new TextDecoder("utf-8");
  */
 import { house, serverLobby } from "./test.js";
 import { appendFile } from "fs";
+import Player from "./class/Player.js";
+import { Server } from "http";
 
 export default function messageActions(
   ws: UWS.WebSocket,
@@ -24,6 +26,7 @@ export default function messageActions(
   console.log(serverLobby.totalClientsInServer);
   client_actions(ws, client_data, house, app);
   room_actions(ws, client_data, house, app);
+  game_actions(ws, client_data, house, app);
   // switch (client_data.channel) {
   //   case CHANNELS.CLIENT_TYPE:
   //     break;
@@ -41,14 +44,28 @@ export default function messageActions(
  * @param client_data
  * @param app
  */
-function client_actions(ws: UWS.WebSocket, client_data: any, house: House, app: UWS.TemplatedApp) {
+function client_actions(
+  ws: UWS.WebSocket,
+  client_data: ServerData,
+  house: House,
+  app: UWS.TemplatedApp
+) {
   switch (client_data.type) {
     case TYPES.CLIENT.JOIN_PUBLIC_ROOM: {
       // create OR update username
       ws.username = client_data.username as string;
+      ws.player = new Player(client_data);
       for (const [_, room] of house.roomMap) {
         if (room.isPlaying) continue;
         if (room.clientMap.size >= room.maxSize) continue;
+
+        ws.send(
+          JSON.stringify({
+            type: TYPES.ROOM.GET_ALL_CLIENTS,
+            clients: room.getAllClients(),
+          })
+        );
+
         // push client to the first empty room available
         // and break out of loop
         room.addClient(ws.id, ws);
@@ -57,21 +74,29 @@ function client_actions(ws: UWS.WebSocket, client_data: any, house: House, app: 
         // subscribe to room channel
         ws.subscribe(room.id);
         // add app to optional third parameter to have it send to everyone
-        publishClientData(ws, room, TYPES.ROOM.ADD_CLIENT, app);
+        publishClientData(ws, room, TYPES.ROOM.ADD_CLIENT);
+        console.log(`${ws.username} has connected. Room count: ${room.size}`);
         break;
       }
-
       break;
     }
     case TYPES.CLIENT.JOIN_PRIVATE_ROOM: {
       // to join a private room, you need a code
       ws.roomId = client_data.roomId as string;
       ws.username = client_data.username as string;
-      joinLeaveRoomHandler(ws, TYPES.CLIENT.JOIN_PRIVATE_ROOM, app);
+      const room: Room | Error = house.getRoom(ws.roomId!);
+
+      room.addClient(ws.id, ws);
+      ws.subscribe(room.id);
+      publishClientData(ws, room, TYPES.ROOM.ADD_CLIENT, app);
       break;
     }
     case TYPES.CLIENT.LEAVE_ROOM:
-      joinLeaveRoomHandler(ws, TYPES.CLIENT.LEAVE_ROOM);
+      const room: Room | Error = house.getRoom(ws.roomId!);
+      room.removeClient(ws.id);
+      publishClientData(ws, room, TYPES.ROOM.REMOVE_CLIENT);
+      ws.unsubscribe(room.id);
+      ws.roomId = undefined;
       break;
   }
 }
@@ -81,15 +106,7 @@ function room_actions(ws: UWS.WebSocket, client_data: any, house: House, app: UW
     case TYPES.ROOM.CREATE_ROOM:
       // const newRoom = roomMap.createRoom();
       break;
-    case TYPES.ROOM.GET_ALL_ROOMS:
-      // send all the rooms and clients over
-
-      ws.send(
-        JSON.stringify({
-          type: TYPES.ROOM.GET_ALL_ROOMS,
-          house: house.getAllRooms(),
-        })
-      );
+    case TYPES.ROOM.GET_ALL_CLIENTS:
       break;
     case TYPES.ROOM.REMOVE_ROOM:
       house.removeRoom(client_data.id);
@@ -97,81 +114,24 @@ function room_actions(ws: UWS.WebSocket, client_data: any, house: House, app: UW
   }
 }
 
+function game_actions(ws: UWS.WebSocket, client_data: any, house: House, app: UWS.TemplatedApp) {
+  switch (client_data.type) {
+    case TYPES.GAME.UPDATE:
+  }
+}
 export function publishClientData(
   ws: UWS.WebSocket,
   room: Room,
   type: string,
   app?: UWS.TemplatedApp
 ): void {
-  console.log(app || ws);
   (app || ws).publish(
     room.id,
     JSON.stringify({
       type,
       clientId: ws.id,
-      clientUsername: ws.username,
+      username: ws.username,
       roomId: room.id,
-      roomSize: room.getAllClients(),
-      rooms: house.getAllRooms(),
     })
   );
 }
-
-export function joinLeaveRoomHandler(
-  ws: UWS.WebSocket,
-  type: string,
-  app?: UWS.TemplatedApp,
-  isSocketClosed?: boolean
-) {
-  const room: Room | Error = house.getRoom(ws.roomId!);
-  if (room instanceof Room) {
-    if (type === TYPES.CLIENT.JOIN_PRIVATE_ROOM) {
-      room.addClient(ws.id, ws);
-      ws.subscribe(room.id);
-      publishClientData(ws, room, TYPES.ROOM.ADD_CLIENT, app);
-    } else if (type === TYPES.CLIENT.LEAVE_ROOM) {
-      room.removeClient(ws.id);
-      ws.roomId = undefined;
-      if (isSocketClosed) {
-        return publishClientData(ws, room, TYPES.ROOM.REMOVE_CLIENT, app);
-      } else {
-        ws.unsubscribe(room.id);
-        return publishClientData(ws, room, TYPES.ROOM.REMOVE_CLIENT);
-      }
-    }
-  }
-}
-// case TYPES.ROOM.ADD_CLIENT_TO_LIST:
-//   // add to every client's list and update old map
-//   room = roomMap.getRoom(client_data.roomId);
-//   if (room instanceof Room) {
-//     // WE ARE THE SERVER. HE IS ALREADY IN THE ARRAY
-//     // WE JUST NEED TO SEND HIS DATA TO EVERYONE AND UPDATE ROOM LISTING
-//     // room.addClient(ws.id, ws);
-//   }
-//   break;
-// case TYPES.ROOM.REMOVE_CLIENT_FROM_LIST:
-//   room = roomMap.getRoom(client_data.roomId);
-//   if (room instanceof Room) {
-//     room.removeClient(ws.id);
-//   }
-//   break; *
-
-// room = roomMap.getRoom(client_data.roomId);
-// if (room instanceof Room) {
-//   console.log(room.getAllClients());
-//   data = {
-//     topic: TOPICS.ROOM_CHANNEL,
-//     type: TYPES.ROOM.REMOVE_CLIENT_FROM_LIST,
-//     roomId: client_data.roomId,
-//     client: ws,
-//   };
-//   app.publish(
-//     getRoomTopic("1234", TOPICS.ROOM_CHANNEL),
-//     JSON.stringify(data)
-//   );
-//   // ws.send(JSON.stringify(data)); cvfgb bfgb
-//   room.removeClient(ws.id);
-//   ws.unsubscribe(getRoomTopic(room.id, TOPICS.ROOM_CHANNEL));
-//   ws.unsubscribe(getRoomTopic(room.id, TOPICS.GAME_CHANNEL));
-// }

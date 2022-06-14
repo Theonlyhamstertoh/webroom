@@ -1,6 +1,6 @@
 import UWS from "uWebSockets.js";
 import getRoomTopic from "./functions/getRoomTopic.js";
-import messageActions, { joinLeaveRoomHandler, publishClientData } from "./message.js";
+import messageActions, { publishClientData } from "./message.js";
 import { TOPICS, TYPES } from "./TOPICS.js";
 import "./class/Room.js";
 import { nanoid } from "nanoid";
@@ -32,7 +32,13 @@ app.ws("/*", {
   close: (ws, message) => {
     serverLobby.totalClientsInServer--;
 
-    ws.roomId && joinLeaveRoomHandler(ws, TYPES.CLIENT.LEAVE_ROOM, app, true);
+    // if client disconnected while in a room, remove client from room
+    if (ws.roomId) {
+      const room: Room | Error = house.getRoom(ws.roomId!);
+      room.removeClient(ws.id);
+      publishClientData(ws, room, TYPES.ROOM.REMOVE_CLIENT, app);
+      console.log(`${ws.username} has disconnected. Room count: ${room.size}`);
+    }
   },
 });
 

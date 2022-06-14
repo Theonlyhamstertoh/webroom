@@ -20,12 +20,12 @@ export default class House {
     this.roomMap.clear();
   }
 
-  getRoom(id: string): Room | Error {
-    if (this.roomMap.has(id)) {
-      return this.roomMap.get(id)!;
-    } else {
-      return new Error("NO ROOM FOUND");
-    }
+  getRoom(id: string): Room {
+    // if (this.roomMap.has(id)) {
+    return this.roomMap.get(id)!;
+    // } else {
+    // return new Error("NO ROOM FOUND");
+    // }
   }
 
   getAllRooms() {

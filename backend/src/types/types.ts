@@ -10,10 +10,11 @@ export interface ServerData {
   roomCode?: string;
   // client?: ClientData;
   clientId?: string;
-  clientUsername?: string;
+  username?: string;
+  game?: GameData;
 }
 
-export interface gameData {
+export interface GameData {
   x: number;
   y: number;
 }
